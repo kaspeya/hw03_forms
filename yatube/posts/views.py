@@ -6,6 +6,13 @@ from .models import Group, Post, User
 from .forms import PostForm
 
 
+def paginator(request, post_list):
+    paginator = Paginator(post_list, settings.PAGE_LIMIT)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    return page_obj
+
+
 # Главная страница
 def index(request):
     template = 'posts/index.html'
@@ -31,7 +38,9 @@ def group_posts(request, slug):
     template = 'posts/group_list.html'
     group = get_object_or_404(Group, slug=slug)
     # Сортировка постов по полю pub_date по убыванию.
-    posts = Post.objects.filter(group=group).order_by('-pub_date')[:settings.PAGE_LIMIT]
+    posts = Post.objects.filter(
+        group=group
+    ).order_by('-pub_date')[:settings.PAGE_LIMIT]
     post_list = Post.objects.all()
     paginator = Paginator(post_list, settings.PAGE_LIMIT)
 
@@ -46,13 +55,6 @@ def group_posts(request, slug):
         'page_obj': page_obj,
     }
     return render(request, template, context, slug)
-
-
-def paginator(request, post_list):
-    paginator = Paginator(post_list, settings.PAGE_LIMIT)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    return page_obj
 
 
 def profile(request, username):
@@ -71,7 +73,7 @@ def profile(request, username):
 def post_detail(request, post_id):
     # Здесь код запроса к модели и создание словаря контекста
     post = get_object_or_404(Post, pk=post_id)
-    page_number = request.GET.get('page' or None)
+    # page_number = request.GET.get('page' or None)
     context = {
         'post': post,
     }
@@ -95,6 +97,7 @@ def post_create(request):
     form = PostForm()
     return render(request, 'posts/post_create.html', {'form': form})
 
+
 @login_required
 def post_edit(request, post_id):
     is_edit = True
@@ -113,5 +116,5 @@ def post_edit(request, post_id):
         'is_edit': is_edit,
     }
     return render(request, 'posts/post_create.html', context)
-    form = PostForm()
+    # form = PostForm()
     return redirect('posts:post_detail', post_id)

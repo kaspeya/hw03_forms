@@ -8,4 +8,3 @@ def validate_not_empty(value):
             'А кто поле будет заполнять, Пушкин?',
             params={'value': value},
         )
-    

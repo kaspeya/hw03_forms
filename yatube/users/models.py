@@ -10,4 +10,3 @@ class Contact(models.Model):
     # К полю body тоже подключаем валидатор, проверяющий, что поле не пустое.
     body = models.TextField(validators=[validate_not_empty])
     is_answered = models.BooleanField(default=False)
-    
