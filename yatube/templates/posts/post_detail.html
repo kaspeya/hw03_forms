@@ -32,6 +32,11 @@
           </a>
         </li>
       </ul>
+    {% if request.user == post.author %}
+      <a href="{% url 'posts:post_edit' post.pk %}">
+        <button>Редактировать</button>
+      </a>
+    {% endif %}
     </aside>
     <article class="col-12 col-md-9">
       <p>{{ post.text|linebreaksbr }}</p>

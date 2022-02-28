@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
+
 from .models import Group, Post, User
 from .forms import PostForm
 
@@ -16,18 +17,10 @@ def paginator(request, post_list):
 # Главная страница
 def index(request):
     template = 'posts/index.html'
-    # Сортировка постов по полю pub_date по убыванию.
-    posts = Post.objects.all()
     post_list = Post.objects.all()
-    paginator = Paginator(post_list, settings.PAGE_LIMIT)
-
-    # Из URL извлекаем номер запрошенной страницы - это значение параметра page
-    page_number = request.GET.get('page')
-
-    # Получаем набор записей для страницы с запрошенным номером
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator(request, post_list)
     context = {
-        'posts': posts,
+        'post_list': post_list,
         'page_obj': page_obj,
     }
     return render(request, template, context)
@@ -37,32 +30,20 @@ def index(request):
 def group_posts(request, slug):
     template = 'posts/group_list.html'
     group = get_object_or_404(Group, slug=slug)
-    # Сортировка постов по полю pub_date по убыванию.
-    posts = Post.objects.filter(
-        group=group
-    ).order_by('-pub_date')[:settings.PAGE_LIMIT]
-    post_list = Post.objects.all()
-    paginator = Paginator(post_list, settings.PAGE_LIMIT)
-
-    # Из URL извлекаем номер запрошенной страницы - это значение параметра page
-    page_number = request.GET.get('page')
-
+    post_list = group.posts.all()
     # Получаем набор записей для страницы с запрошенным номером
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator(request, post_list)
     context = {
-        'group': group,
-        'posts': posts,
         'page_obj': page_obj,
+        'group': group,
     }
     return render(request, template, context, slug)
 
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    post_list = author.posts.filter(author__exact=author)
-    paginator = Paginator(post_list, settings.PAGE_LIMIT)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    post_list = author.posts.filter()
+    page_obj = paginator(request, post_list)
     context = {
         'page_obj': page_obj,
         'author': author,
@@ -71,9 +52,7 @@ def profile(request, username):
 
 
 def post_detail(request, post_id):
-    # Здесь код запроса к модели и создание словаря контекста
     post = get_object_or_404(Post, pk=post_id)
-    # page_number = request.GET.get('page' or None)
     context = {
         'post': post,
     }
@@ -82,19 +61,15 @@ def post_detail(request, post_id):
 
 @login_required
 def post_create(request):
-    if request.method == 'POST':
-        form = PostForm(request.POST)
-        if form.is_valid():
-            text = form.cleaned_data['text']
-            group = form.cleaned_data['group']
-            Post.objects.create(
-                text=text,
-                group=group,
-                author=request.user,
-            )
-            return redirect('posts:profile', request.user.username)
-        return render(request, 'posts/post_create.html', {'form': form})
-    form = PostForm()
+    form = PostForm(request.POST or None)
+    if form.is_valid():
+        new_form = form.save(commit=False)
+        new_form.text = form.cleaned_data['text']
+        new_form.group = form.cleaned_data['group']
+        new_form.author = request.user
+        new_form.save()
+        # Не совсем поняла павильно ли сделала?
+        return redirect('posts:profile', request.user.username)
     return render(request, 'posts/post_create.html', {'form': form})
 
 
@@ -105,16 +80,12 @@ def post_edit(request, post_id):
     form = PostForm(request.POST or None, instance=post)
     if request.user != post.author:
         return redirect('posts:post_detail', post_id)
-    if request.method == 'POST':
-        if form.is_valid():
-            post.text = form.cleaned_data['text']
-            post.group = form.cleaned_data['group']
-            post.save()
-            return redirect('posts:post_detail', post_id)
+    if form.is_valid():
+        post.save()
+        return redirect('posts:post_detail', post_id)
     context = {
         'form': form,
         'is_edit': is_edit,
     }
     return render(request, 'posts/post_create.html', context)
-    # form = PostForm()
     return redirect('posts:post_detail', post_id)
