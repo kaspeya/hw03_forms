@@ -9,7 +9,7 @@ from .forms import PostForm
 
 def paginator(request, post_list):
     paginator = Paginator(post_list, settings.PAGE_LIMIT)
-    page_number = request.GET.get('page', 1)
+    page_number = request.GET.get(settings.PAGE_NUMBER)
     page_obj = paginator.get_page(page_number)
     return page_obj
 
@@ -64,11 +64,8 @@ def post_create(request):
     form = PostForm(request.POST or None)
     if form.is_valid():
         new_form = form.save(commit=False)
-        new_form.text = form.cleaned_data['text']
-        new_form.group = form.cleaned_data['group']
         new_form.author = request.user
         new_form.save()
-        # Не совсем поняла павильно ли сделала?
         return redirect('posts:profile', request.user.username)
     return render(request, 'posts/post_create.html', {'form': form})
 
@@ -77,15 +74,15 @@ def post_create(request):
 def post_edit(request, post_id):
     is_edit = True
     post = get_object_or_404(Post, pk=post_id)
-    form = PostForm(request.POST or None, instance=post)
     if request.user != post.author:
         return redirect('posts:post_detail', post_id)
+    else:
+        form = PostForm(request.POST or None, instance=post)
     if form.is_valid():
-        post.save()
+        form.save()
         return redirect('posts:post_detail', post_id)
     context = {
         'form': form,
         'is_edit': is_edit,
     }
     return render(request, 'posts/post_create.html', context)
-    return redirect('posts:post_detail', post_id)

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
@@ -131,6 +132,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 PAGE_LIMIT = 10
+PAGE_NUMBER = 'page'
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'posts:index'
